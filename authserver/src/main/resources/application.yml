@@ -13,9 +13,9 @@ spring:
     oauth2:
       authorizationserver:
         client:
-          messaging-client:
+          user-accounts-app:
             registration:
-              client-id: "messaging-client"
+              client-id: "user-accounts-app"
               client-secret: "{noop}secret"
               client-authentication-methods:
                 - "client_secret_basic"
@@ -24,13 +24,13 @@ spring:
                 - "refresh_token"
                 - "client_credentials"
               redirect-uris:
-                - "http://127.0.0.1:8080/login/oauth2/code/messaging-client-oidc"
+                - "http://127.0.0.1:8080/login/oauth2/code/user-accounts-app-oidc"
                 - "http://127.0.0.1:8080/authorized"
               post-logout-redirect-uris:
                 - "http://127.0.0.1:8080/logged-out"
               scopes:
                 - "openid"
                 - "profile"
-                - "message.read"
-                - "message.write"
+                - "accounts.read"
+                - "accounts.write"
             require-authorization-consent: true

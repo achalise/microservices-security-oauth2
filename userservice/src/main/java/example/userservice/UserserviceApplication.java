@@ -2,26 +2,21 @@ package example.userservice;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.Customizer;
-import org.springframework.security.config.annotation.web.builders.HttpSecurity;
-import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.reactive.EnableWebFluxSecurity;
 import org.springframework.security.config.web.server.ServerHttpSecurity;
-import org.springframework.security.oauth2.jwt.ReactiveJwtDecoder;
-import org.springframework.security.oauth2.jwt.ReactiveJwtDecoders;
-import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.oauth2.server.resource.web.reactive.function.client.ServerBearerExchangeFilterFunction;
 import org.springframework.security.web.server.SecurityWebFilterChain;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Mono;
 
-import static org.springframework.security.config.Customizer.withDefaults;
 
 @SpringBootApplication
 public class UserserviceApplication {
@@ -34,11 +29,23 @@ public class UserserviceApplication {
 
 @RestController
 class ApplicationController {
+	private final WebClient webClient;
+
+	ApplicationController(WebClient webClient) {
+		this.webClient = webClient;
+	}
 	Logger log = LoggerFactory.getLogger(ApplicationController.class);
 	@GetMapping("/user/{userId}/accounts")
 	public Mono<Account> accountsForUser(@PathVariable String userId) {
+		log.info("Retrieving accounts for user {}", userId);
+
+		return webClient.get().uri("/accounts").retrieve().bodyToMono(Account.class);
+	}
+
+	@GetMapping("/user/{userId}")
+	public Mono<User> getUser(@PathVariable String userId) {
 	  log.info("Retrieving accounts for user {}", userId);
-	  return Mono.just(new Account("test", "a name"));
+	  return Mono.just(new User(userId, "testuser@email.com", "Joe", "Bloggs"));
 	}
 
 	@GetMapping("/health")
@@ -48,6 +55,7 @@ class ApplicationController {
 }
 
 record Account(String id, String name) {}
+record User(String id, String email, String firstName, String lastName) {}
 
 @Configuration
 @EnableWebFluxSecurity
@@ -62,8 +70,11 @@ class Config {
 		return http.build();
 	}
 
-//	@Bean
-//	public ReactiveJwtDecoder jwtDecoder(@Value("${spring.security.oauth2.client.provider.spring.issuer-uri}") String issuerUri) {
-//		return ReactiveJwtDecoders.fromIssuerLocation(issuerUri);
-//	}
+	@Bean
+	WebClient webClient() {
+		return WebClient.builder()
+				.filter(new ServerBearerExchangeFilterFunction())
+				.baseUrl("http://localhost:8083")
+				.build();
+	}
 }

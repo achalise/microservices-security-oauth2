@@ -17,6 +17,9 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Mono;
 
+import java.util.Collections;
+import java.util.List;
+
 
 @SpringBootApplication
 public class UserserviceApplication {
@@ -36,16 +39,19 @@ class ApplicationController {
 	}
 	Logger log = LoggerFactory.getLogger(ApplicationController.class);
 	@GetMapping("/user/{userId}/accounts")
-	public Mono<Account> accountsForUser(@PathVariable String userId) {
+	public Mono<User> accountsForUser(@PathVariable String userId) {
 		log.info("Retrieving accounts for user {}", userId);
 
-		return webClient.get().uri("/accounts").retrieve().bodyToMono(Account.class);
+		return webClient.get()
+				.uri("/accounts").retrieve()
+				.bodyToMono(Account.class)
+				.map(account -> new User(userId, "testuser@email.com", "Joe", "Bloggs", List.of(account)));
 	}
 
 	@GetMapping("/user/{userId}")
 	public Mono<User> getUser(@PathVariable String userId) {
 	  log.info("Retrieving accounts for user {}", userId);
-	  return Mono.just(new User(userId, "testuser@email.com", "Joe", "Bloggs"));
+	  return Mono.just(new User(userId, "testuser@email.com", "Joe", "Bloggs", Collections.emptyList()));
 	}
 
 	@GetMapping("/health")
@@ -55,7 +61,7 @@ class ApplicationController {
 }
 
 record Account(String id, String name) {}
-record User(String id, String email, String firstName, String lastName) {}
+record User(String id, String email, String firstName, String lastName, List<Account> accounts) {}
 
 @Configuration
 @EnableWebFluxSecurity
